@@ -21,9 +21,6 @@ ext {
 	
 	// The git bridge configuration, override in used project
 	gitbridge = [
-		// The store that holds meta data about harvest, e.g. the last fetched date and version.
-		datadir: null,
-		
 		// The root directory of the git repository.
 		gitroot: null
 	]
@@ -39,7 +36,8 @@ ext {
  * Returns the array to execute the DTR command. Handles common parameters defined in the configuration.
  */
 def getDtrCommand = { 
-	def command = [ "dtr" ]
+	// TODO .bat or .sh based on OS
+	def command = [ "dtr.sh" ]
 	return command
 }
 
@@ -84,7 +82,6 @@ def initRepository = {
 task updateGit {
 	doLast {
 		assert dtr.url != null
-		assert file(gitbridge.datadir).exists()
 		assert file(gitbridge.gitroot).exists()
 
 		def gitFolder = file("${gitbridge.gitroot}/.git")
@@ -92,7 +89,7 @@ task updateGit {
 			initRepository();
 		}
 
-		def gitAuthor "DTR Git Bridge <nobody@nomail>"
+		def gitAuthor = "DTR Git Bridge <nobody@nomail>"
 		fetchCurrentState()
 		commit(gitAuthor, "DTR Synchronization", convertTimestamp(LocalDateTime.now()))
 

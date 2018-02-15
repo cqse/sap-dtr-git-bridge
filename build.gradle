@@ -3,6 +3,5 @@ apply from: "$rootDir/gradle/dtr.gradle"
 ext {
 	dtr.url   = "http://myserver:50000/dtr"
 	
-	gitbridge.datadir = "__TODO__"
 	gitbridge.gitroot = "__TODO__"
 }
