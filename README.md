@@ -1,4 +1,4 @@
-SAP DTR Git Bridge
+SAP DTR Git Bridge [![Build Status](https://travis-ci.org/agoeb/sap-dtr-git-bridge.svg?branch=master)](https://travis-ci.org/agoeb/sap-dtr-git-bridge)
 ==================
 
 Gradle scripts for mirroring SAP Design Time Repository (DTR) code changes into a Git repository.
