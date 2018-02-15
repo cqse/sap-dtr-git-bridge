@@ -1,0 +1,102 @@
+apply from: "$rootDir/gradle/base.gradle"
+
+import java.time.*
+import java.time.format.DateTimeFormatter
+
+// TODO find a way to general import buildscript deps...
+buildscript {
+	dependencies {
+		classpath fileTree("$rootDir/gradle/lib").include("**.jar")
+	}
+}
+
+///////  Configuration
+
+ext {
+	// The dtr server configuration
+	dtr = [
+		// The dtr server URL, e.g. http://my.server:50000/dtr.
+		url: null
+	]
+	
+	// The git bridge configuration, override in used project
+	gitbridge = [
+		// The store that holds meta data about harvest, e.g. the last fetched date and version.
+		datadir: null,
+		
+		// The root directory of the git repository.
+		gitroot: null
+	]
+
+	formats = [
+		GIT_COMMIT: DateTimeFormatter.ofPattern("MM/dd/yyyy'T'HH:mm:ss")
+	]
+}
+
+///////  Updating the Git repository
+
+/**
+ * Returns the array to execute the DTR command. Handles common parameters defined in the configuration.
+ */
+def getDtrCommand = { 
+	def command = [ "dtr" ]
+	return command
+}
+
+/** Checks out the given version of the given file from DTR. */
+def fetchCurrentState = { 
+	def options = [ workingDir: gitbridge.gitroot ]
+	def command = getDtrCommand()
+	shell(options, command)
+}
+
+/** Converts the given LocalDateTime to git commit format. */
+def convertTimestamp = {
+	return it.format(formats.GIT_COMMIT)
+}
+
+/** 
+ * Stages all changes in gitbridge.gitroot and commits them with the given
+ * author, message, and commit time.
+ */
+def commit = { author, message, time ->
+	def options = [ environment: ["GIT_COMMITTER_DATE": time ], workingDir: gitbridge.gitroot ]
+	println shell(options, ["git", "add", "."])
+	println shell(options, ["git", "commit", "--allow-empty", "--date=$time", "--author=\"$author\"", "-m", message])
+}
+
+/**
+ * Initializes the git repository. Sets default committer and adds a .gitignore file
+ * that prevents harvest signature files from being added to the repository.
+ */
+def initRepository = {
+	println "${gitbridge.gitroot} does not seem to be a Git repository. Initializing."
+
+	def options = [ workingDir: gitbridge.gitroot ]
+	shell(options, ["git", "init"])
+	shell(options, ["git", "config", "user.name", "DTR Git Bridge"])
+	shell(options, ["git", "config", "user.email", "nobody@nomail"])
+}
+
+/**
+ * Main task. Fetches new changes from DTR and commits them to the git repository.
+ */
+task updateGit {
+	doLast {
+		assert dtr.url != null
+		assert file(gitbridge.datadir).exists()
+		assert file(gitbridge.gitroot).exists()
+
+		def gitFolder = file("${gitbridge.gitroot}/.git")
+		if(!gitFolder.exists()) {
+			initRepository();
+		}
+
+		def gitAuthor "DTR Git Bridge <nobody@nomail>"
+		fetchCurrentState()
+		commit(gitAuthor, "DTR Synchronization", convertTimestamp(LocalDateTime.now()))
+
+		println "Done."
+	}
+}
+
