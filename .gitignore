@@ -3,3 +3,4 @@
 /gradle/dist
 /gradle/lib
 /wrapper/
+\.dtr/

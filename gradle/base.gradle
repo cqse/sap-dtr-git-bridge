@@ -25,6 +25,8 @@ ext {
 		// see http://stackoverflow.com/questions/5483830/process-waitfor-never-returns
 		def output = process.getInputStream().text
 		def errors = process.getErrorStream().text
+		println output
+		println errors
 		process.waitFor()
 
 		if (process.exitValue()) {
