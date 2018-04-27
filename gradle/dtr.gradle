@@ -30,7 +30,7 @@ ext {
 	]
 	
 	diCmdTools = [
-		root: "$System.env.CMD_TOOLS_HOME"
+		root: null
 	]
 
 	formats = [
@@ -96,9 +96,10 @@ def fetchCurrentState = {
 	def options = [
 		workingDir: "${diCmdTools.root}${File.separator}dtr",
 		environment: [
+			'JAVA_HOME': org.gradle.internal.jvm.Jvm.current().getJavaHome(),
 			'DEFAULT_PROPERTIES': "-Dvfs.configfolder=${projectDir}${File.separator}.dtr"
 		]
-	 ]
+	]
 	def command = getDtrCommand()
 	shell(options, command)
 }

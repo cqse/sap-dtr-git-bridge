@@ -18,6 +18,13 @@ Usage
   * From the archive, extract `deploy archives/tc~di~cmd_tools~sda.sda`
   * From that archive, extract `di_cmd_tools.zip`
   * Extract that zip file to a location of your choice
-* Open env.bat and adjust your JAVA_HOME as well as the location of the DI command line tools.
-* Open build.gradle and add your connection details as well as a data directory and git root directory.
-* call update-git.bat manually or from a scheduled script
+* Open `build.gradle` and add your connection details as well as a data directory, git root directory and the location of the DI command line tools.
+
+Windows:
+* call `gradlew.bat updateGit` manually or from a scheduled script
+
+Linux:
+* Execute `chmod +x file` for `gradlew` and `di_cmd/dtr/dtr.sh`.
+* Open the di_cmd/dtr/dtr.sh and replace /bin/sh with /bin/bash in the first line.
+* Save the file with unix line ending (has windows line ending by default)
+* call `./gradlew updateGit` manually or from a scheduled script
