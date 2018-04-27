@@ -14,7 +14,7 @@ ext {
 	shell = { Map options = [:], commandLine ->
 		def environment = options["environment"] ?: [:]
 		def workingDir = options["workingDir"] ?: new File(".").absolutePath
-		println "executing $commandLine in $workingDir"
+		logger.info("executing $commandLine in $workingDir")
 		def builder = new ProcessBuilder(commandLine as String[]).inheritIO().redirectOutput(ProcessBuilder.Redirect.PIPE).directory(new File(workingDir))
 		def builderEnvironment = builder.environment();
 		environment.each { key, value ->

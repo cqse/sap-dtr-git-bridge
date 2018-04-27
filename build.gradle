@@ -1,7 +1,10 @@
 apply from: "$rootDir/gradle/dtr.gradle"
 
 ext {
-	dtr.url   = "http://myserver:50000/dtr"
+	dtr.url = 'http://myserver:50000/dtr/'
+	dtr.user = '__TODO__'
+	dtr.password = '__TODO__'
+	dtr.remoteRootDir = '__TODO__'
 	
-	gitbridge.gitroot = "__TODO__"
+	gitbridge.gitroot = '__TODO__'
 }
