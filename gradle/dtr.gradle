@@ -2,11 +2,12 @@ apply from: "$rootDir/gradle/base.gradle"
 
 import java.time.*
 import java.time.format.DateTimeFormatter
+import org.apache.tools.ant.taskdefs.condition.Os
 
 // TODO find a way to general import buildscript deps...
 buildscript {
 	dependencies {
-		classpath fileTree("$rootDir/gradle/lib").include("**.jar")
+		classpath fileTree("$rootDir/gradle/lib").include('**.jar')
 	}
 }
 
@@ -16,13 +17,20 @@ ext {
 	// The dtr server configuration
 	dtr = [
 		// The dtr server URL, e.g. http://my.server:50000/dtr.
-		url: null
+		url: null,
+		user: null,
+		password: null,
+		remoteRootDir: ''
 	]
 	
 	// The git bridge configuration, override in used project
 	gitbridge = [
 		// The root directory of the git repository.
 		gitroot: null
+	]
+	
+	diCmdTools = [
+		root: "$System.env.CMD_TOOLS_HOME"
 	]
 
 	formats = [
@@ -35,15 +43,62 @@ ext {
 /**
  * Returns the array to execute the DTR command. Handles common parameters defined in the configuration.
  */
-def getDtrCommand = { 
-	// TODO .bat or .sh based on OS
-	def command = [ "dtr.sh" ]
-	return command
+def getDtrCommand = {
+	def cmd
+	if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+		cmd = [ 'cmd', '/C', 'dtr.bat' ]
+	} else {
+		cmd = [ './dtr.sh' ]
+	}
+	cmd.addAll(['-un', dtr.user, '-pwd', dtr.password, 'get', '/'])
+	return cmd
+}
+
+/** Generates the necessary configuration files for the dtr cmd tool. */
+def configureDTRClient = {
+	file('.dtr').deleteDir()
+	file('.dtr').mkdir()
+	file('.dtr/clients.xml').text = """\
+			|<?xml version="1.0" encoding="UTF-8"?>
+			|<clients>
+			|	<client
+			|		name="dtr_shell_client"
+			|		active="true"
+			|		absoluteLocalRoot="${gitbridge.gitroot}"
+			|		logicalSystem="dtr_shell_client" >
+			|		<mountPoints>
+			|			<mountPoint
+			|				repositoryServerUrl="${dtr.url}"
+			|				relativeRemoteRoot="${dtr.remoteRootDir}"
+			|				relativeLocalRoot="" />
+			|		</mountPoints>
+			|	</client>
+			|</clients>
+			|""".stripMargin()
+	file('.dtr/dtr_shell_client.system').text = """\
+			|<?xml version="1.0" encoding="UTF-8"?>
+			|<system name="dtr_shell_client">
+			|	<repositoryServers>
+			|		<repositoryServer url="${dtr.url}">
+			|			<filters>
+			|			</filters>
+			|		</repositoryServer>
+			|	</repositoryServers>
+			|	<buildServers>
+			|	</buildServers>
+			|</system>
+			|""".stripMargin()
 }
 
 /** Checks out the given version of the given file from DTR. */
 def fetchCurrentState = { 
-	def options = [ workingDir: gitbridge.gitroot ]
+	configureDTRClient()
+	def options = [
+		workingDir: "${diCmdTools.root}${File.separator}dtr",
+		environment: [
+			'DEFAULT_PROPERTIES': "-Dvfs.configfolder=${projectDir}${File.separator}.dtr"
+		]
+	 ]
 	def command = getDtrCommand()
 	shell(options, command)
 }
@@ -58,9 +113,9 @@ def convertTimestamp = {
  * author, message, and commit time.
  */
 def commit = { author, message, time ->
-	def options = [ environment: ["GIT_COMMITTER_DATE": time ], workingDir: gitbridge.gitroot ]
-	println shell(options, ["git", "add", "."])
-	println shell(options, ["git", "commit", "--allow-empty", "--date=$time", "--author=\"$author\"", "-m", message])
+	def options = [ environment: ['GIT_COMMITTER_DATE': time ], workingDir: gitbridge.gitroot ]
+	println shell(options, ['git', 'add', '.'])
+	println shell(options, ['git', 'commit', '--allow-empty', "--date=$time", '-m', message])
 }
 
 /**
@@ -71,9 +126,20 @@ def initRepository = {
 	println "${gitbridge.gitroot} does not seem to be a Git repository. Initializing."
 
 	def options = [ workingDir: gitbridge.gitroot ]
-	shell(options, ["git", "init"])
-	shell(options, ["git", "config", "user.name", "DTR Git Bridge"])
-	shell(options, ["git", "config", "user.email", "nobody@nomail"])
+	shell(options, ['git', 'init'])
+	shell(options, ['git', 'config', 'user.name', 'DTRGitBridge'])
+	shell(options, ['git', 'config', 'user.email', 'nobody@nomail.de'])
+}
+
+/** Removes all files and folders inside the git root dir except the .git folder.
+ * This allows to also get file deletions.
+ */
+def removeAllFilesInGit(root) {
+	for (File file: new File(root).listFiles()) {
+		if(!file.getName().equals('.git')) {
+			file.deleteDir();
+		}
+	}
 }
 
 /**
@@ -83,17 +149,19 @@ task updateGit {
 	doLast {
 		assert dtr.url != null
 		assert file(gitbridge.gitroot).exists()
+		removeAllFilesInGit(gitbridge.gitroot)
 
 		def gitFolder = file("${gitbridge.gitroot}/.git")
 		if(!gitFolder.exists()) {
 			initRepository();
 		}
 
-		def gitAuthor = "DTR Git Bridge <nobody@nomail>"
+		def gitAuthor = 'DTRGitBridge <nobody@nomail.de>'
 		fetchCurrentState()
-		commit(gitAuthor, "DTR Synchronization", convertTimestamp(LocalDateTime.now()))
+		commit(gitAuthor, 'DTR Synchronization', convertTimestamp(LocalDateTime.now()))
 
-		println "Done."
+		println 'Done.'
 	}
 }
+
 
