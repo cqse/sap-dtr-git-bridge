@@ -7,4 +7,6 @@ ext {
 	dtr.remoteRootDir = '__TODO__'
 	
 	gitbridge.gitroot = '__TODO__'
+
+	diCmdTools.root = '__TODO__'
 }
