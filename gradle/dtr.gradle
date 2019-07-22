@@ -20,7 +20,8 @@ ext {
 		url: null,
 		user: null,
 		password: null,
-		remoteRootDir: ''
+		remoteRootDir: '',
+		workspaceDir : '/'
 	]
 	
 	// The git bridge configuration, override in used project
@@ -50,7 +51,7 @@ def getDtrCommand = {
 	} else {
 		cmd = [ './dtr.sh' ]
 	}
-	cmd.addAll(['-un', dtr.user, '-pwd', dtr.password, 'get', '/'])
+	cmd.addAll(['-un', dtr.user, '-pwd', dtr.password, 'get', "${dtr.workspaceDir}"])
 	return cmd
 }
 

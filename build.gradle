@@ -5,6 +5,7 @@ ext {
 	dtr.user = '__TODO__'
 	dtr.password = '__TODO__'
 	dtr.remoteRootDir = '__TODO__'
+	dtr.workspaceDir = '__TODO__'
 	
 	gitbridge.gitroot = '__TODO__'
 
