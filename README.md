@@ -9,7 +9,35 @@ Gradle scripts for mirroring SAP Design Time Repository (DTR) code changes into 
 
 ## Required Privileges in DTR
 
-The configured user requires the _export_ privilege on the resource within the DTR (i.e. `<dtr.url>/<dtr.remoteRootDir>`).
+The configured user requires the _read_ privilege on the resource within the DTR (i.e. `<dtr.url>/<dtr.remoteRootDir>`).
+
+### Setting the Privileges in DTR
+
+* Navigate to the acl root folder via `ws/system/configactive/ACLs/byPath` subfolders. You can see the `acl.xml` file for the DTR root.
+* Click on the “edit Resource” icon in the “Actions” column in the row of `acl.xml`.
+* Create a new activity. You don’t need to specify a name for it. Click on “Checkout”.
+* Download and edit the `acl.xml` file accordingly for the configured user. This is an example for the test workspace folder:
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<acls>
+<acl>
+  <resource>/ws/test/</resource>
+  <inheritance>ignore</inheritance>
+  <ace>
+    <principal>dtr-test-user</principal>
+    <grant>
+      <privilege>read</privilege>
+    </grant>
+    <description></description>
+  </ace>
+</acl>
+</acls>
+```
+* Choose “Upload content” to specify the file with the new content.
+* Click on “Save”.
+* In the following screen click on “Checkin” to make the changes persistent.
+* Go to `http(s)://<nwdi-server>:<http- port>/dtr/sysconfig/support/AclRefresh?command=Refresh`.
+* Click on the refresh button to refresh the stored access restrictions and apply your changes. Only after refreshing the changed access rights are working!
 
 ## Usage
 
