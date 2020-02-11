@@ -120,6 +120,14 @@ def commit = { author, message, time ->
 	println shell(options, ['git', 'commit', '--allow-empty', "--date=$time", '-m', message])
 }
 
+/** 
+ * Reverts all changes in gitbridge.gitroot.
+ */
+def revert = {
+	def options = [ workingDir: gitbridge.gitroot ]
+	println shell(options, ['git', 'reset', '--hard', 'HEAD'])
+}
+
 /**
  * Initializes the git repository. Sets default committer and adds a .gitignore file
  * that prevents harvest signature files from being added to the repository.
@@ -134,12 +142,15 @@ def initRepository = {
 }
 
 /** Removes all files and folders inside the git root dir except the .git folder.
- * This allows to also get file deletions.
+ * This allows to also notice file deletions in the remote repository.
  */
 def removeAllFilesInGit(root) {
-	for (File file: new File(root).listFiles()) {
+	for (File file : new File(root).listFiles()) {
 		if(!file.getName().equals('.git')) {
+			// recursively deletes directories
 			file.deleteDir();
+			// deletes files
+			file.delete();
 		}
 	}
 }
@@ -151,19 +162,22 @@ task updateGit {
 	doLast {
 		assert dtr.url != null
 		assert file(gitbridge.gitroot).exists()
-		removeAllFilesInGit(gitbridge.gitroot)
 
 		def gitFolder = file("${gitbridge.gitroot}/.git")
 		if(!gitFolder.exists()) {
 			initRepository();
 		}
 
-		def gitAuthor = 'DTRGitBridge <nobody@nomail.de>'
+		removeAllFilesInGit(gitbridge.gitroot)
 		fetchCurrentState()
-		commit(gitAuthor, 'DTR Synchronization', convertTimestamp(LocalDateTime.now()))
 
-		println 'Done.'
+		if(file(gitbridge.gitroot).listFiles().size() == 1) {
+			revert()
+			println 'Problem fetching files from DTR. Repository Reset.'
+		} else {
+			def gitAuthor = 'DTRGitBridge <nobody@nomail.de>'
+			commit(gitAuthor, 'DTR Synchronization', convertTimestamp(LocalDateTime.now()))
+			println 'Done.'
+		}
 	}
 }
-
-
