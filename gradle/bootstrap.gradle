@@ -20,7 +20,3 @@ task bootstrap(type: Copy) {
 	from configurations.build
 	into "lib"
 }
-
-task wrapper(type: Wrapper) {
-	gradleVersion = '4.7'
-}
