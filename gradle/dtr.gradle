@@ -44,14 +44,14 @@ ext {
 /**
  * Returns the array to execute the DTR command. Handles common parameters defined in the configuration.
  */
-def getDtrCommand = {
+def getDtrCommand(commandName) {
 	def cmd
 	if (Os.isFamily(Os.FAMILY_WINDOWS)) {
 		cmd = [ 'cmd', '/C', 'dtr.bat' ]
 	} else {
 		cmd = [ './dtr.sh' ]
 	}
-	cmd.addAll(['-un', dtr.user, '-pwd', dtr.password, 'get', "${dtr.workspaceDir}"])
+	cmd.addAll(['-un', dtr.user, '-pwd', dtr.password, commandName, "${dtr.workspaceDir}"])
 	return cmd
 }
 
@@ -101,8 +101,13 @@ def fetchCurrentState = {
 			'DEFAULT_PROPERTIES': "-Dvfs.configfolder=${projectDir}${File.separator}.dtr"
 		]
 	]
-	def command = getDtrCommand()
-	shell(options, command)
+	shell(options, getDtrCommand('get'))
+
+	// we double check the status, as the 'get' will not fail in case of networking issues
+	def statusOutput = shell(options, getDtrCommand('status'))
+	if (statusOutput.contains('Could not get the file system manager.')) {
+		fail('Server unreachable!')
+	}
 }
 
 /** Converts the given LocalDateTime to git commit format. */
